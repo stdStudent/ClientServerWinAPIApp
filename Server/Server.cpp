@@ -23,16 +23,21 @@ typedef struct {
     char password[32];
 } ServerConfig;
 
+std::wstring pwd() {
+    wchar_t path[MAX_PATH];
+    GetModuleFileName(NULL, path, MAX_PATH);
+    PathRemoveFileSpecW(path);
+    return std::wstring(path);
+}
+
 void LoadConfig(ServerConfig* config) {
     wchar_t port[32];
     wchar_t directory[MAX_PATH];
     wchar_t login[32];
     wchar_t password[32];
 
-    wchar_t path[MAX_PATH];
-    GetModuleFileName(NULL, path, MAX_PATH);
-    PathRemoveFileSpecW(path);
-    std::wstring pathToIni = std::wstring(path) + L"\\" + CONFIG_FILE;
+    auto path = pwd();
+    std::wstring pathToIni = path + L"\\" + CONFIG_FILE;
 
 	if (!GetFileAttributesW(pathToIni.c_str())) {
 		printf("server.ini file not found\n");
