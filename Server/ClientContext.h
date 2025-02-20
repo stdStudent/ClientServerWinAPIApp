@@ -30,7 +30,12 @@ struct ClientContext {
     ClientContext(SOCKET s, ServerConfig* cfg) : socket(s), config(cfg), authenticated(false), writing(false) {
         memset(&readOverlapped, 0, sizeof(OVERLAPPED));
         memset(&writeOverlapped, 0, sizeof(OVERLAPPED));
-        ptpIo = CreateThreadpoolIo((HANDLE)s, IoCompletionCallback, this, nullptr);
+
+        // Use the global thread pool and callback environment
+        ptpIo = CreateThreadpoolIo((HANDLE)s, IoCompletionCallback, this, &g_CallbackEnv);
+        if (ptpIo == nullptr) {
+            // Handle error
+        }
     }
 
     ~ClientContext() {

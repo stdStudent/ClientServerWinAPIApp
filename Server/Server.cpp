@@ -15,6 +15,7 @@
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "Shlwapi.lib")
 
+#include "GlobalThreadPool.h"
 #include "ServerConfig.h"
 #include "ClientContext.h"
 
@@ -161,6 +162,8 @@ int main() {
     bind(listenSocket, (SOCKADDR*)&addr, sizeof(addr));
     listen(listenSocket, SOMAXCONN);
 
+    InitializeThreadPool();
+
     while (true) {
         SOCKADDR_IN clientAddr;
         int addrLen = sizeof(clientAddr);
@@ -171,6 +174,8 @@ int main() {
         ClientContext* client = new ClientContext(clientSocket, &config);
         StartAsyncRead(client);
     }
+
+    CleanupThreadPool();
 
     closesocket(listenSocket);
     WSACleanup();
