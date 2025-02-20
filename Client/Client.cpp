@@ -73,13 +73,13 @@ int main() {
     connect(sock, (SOCKADDR*)&addr, sizeof(addr));
 
     // Authenticate
-    char authMsg[128];
+    char authMsg[128] = { 0 };
     sprintf(authMsg, "USER %s PASS %s", config.login, config.password);
     send(sock, authMsg, strlen(authMsg), 0);
 
-    char response[32];
+    char response[32] = { 0 };
     recv(sock, response, 32, 0);
-    if (strcmp(response, "AUTH_OK") != 0) {
+    if (strcmp(response, "AUTH_OK\n") != 0) {
         printf("Authentication failed!\n");
 		system("pause");
         return 1;
@@ -96,13 +96,23 @@ int main() {
         send(sock, cmd, strlen(cmd), 0);
 
         if (strncmp(cmd, "LIST", 4) == 0) {
+			std::string fullMessage = "";
             while (1) {
-                char buffer[BUFFER_SIZE];
+                char buffer[BUFFER_SIZE] = { 0 };
                 int bytesRead = recv(sock, buffer, BUFFER_SIZE, 0);
-                buffer[bytesRead] = '\0';
 
-                if (strcmp(buffer, "END_LIST") == 0) break;
-                printf("%s", buffer);
+                /*if (strcmp(buffer, "END_LIST") == 0) break;
+                printf("%s", buffer);*/
+
+				fullMessage += buffer;
+
+                // find "END_LIST\n" in fullMessage, delete it from buffer, output result
+				size_t pos = fullMessage.find("END_LIST\n");
+                if (pos != std::string::npos) {
+                    fullMessage.erase(pos, 8);
+                    printf("%s", fullMessage.c_str());
+                    break;
+                }
             }
         }
         else if (strncmp(cmd, "GET ", 4) == 0) {

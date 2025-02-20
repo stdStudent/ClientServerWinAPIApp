@@ -15,19 +15,8 @@
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "Shlwapi.lib")
 
-#define CONFIG_FILE L"server.ini"
-#define BUFFER_SIZE 4096
-
-typedef struct {
-	char login[32];
-	char password[32];
-} User;
-
-typedef struct {
-    int port;
-    char directory[MAX_PATH];
-	std::vector<User> users;
-} ServerConfig;
+#include "ServerConfig.h"
+#include "ClientContext.h"
 
 std::wstring pwd() {
     wchar_t path[MAX_PATH];
@@ -80,14 +69,6 @@ void LoadConfig(ServerConfig* config) {
 
     config->port = _wtoi(port);
     wcstombs(config->directory, directory, MAX_PATH);
-}
-
-bool Authenticate(char* user, char* pass, ServerConfig* config) {
-	for (auto& u : config->users) {
-		if (strcmp(u.login, user) == 0 && strcmp(u.password, pass) == 0) {
-			return true;
-		}
-	}
 }
 
 DWORD WINAPI ClientHandler(LPVOID lpParam) {
@@ -180,13 +161,15 @@ int main() {
     bind(listenSocket, (SOCKADDR*)&addr, sizeof(addr));
     listen(listenSocket, SOMAXCONN);
 
-    while (1) {
+    while (true) {
         SOCKADDR_IN clientAddr;
         int addrLen = sizeof(clientAddr);
-        SOCKET client = accept(listenSocket, (SOCKADDR*)&clientAddr, &addrLen);
+        SOCKET clientSocket = accept(listenSocket, (SOCKADDR*)&clientAddr, &addrLen);
+        u_long mode = 1;
+        ioctlsocket(clientSocket, FIONBIO, &mode);
 
-        HANDLE thread = CreateThread(NULL, 0, ClientHandler, &client, 0, NULL);
-        CloseHandle(thread);
+        ClientContext* client = new ClientContext(clientSocket, &config);
+        StartAsyncRead(client);
     }
 
     closesocket(listenSocket);
